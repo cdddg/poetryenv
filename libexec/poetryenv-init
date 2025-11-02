@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Usage: eval "$(poetryenv init - [bash|zsh])"
+# Summary: Configure the shell environment for Poetryenv
+# Help: Initialize Poetryenv for your shell. This enables shell integration
+# and tab completion. Add this to your shell's startup file:
+#
+# For bash (~/.bashrc or ~/.bash_profile):
+#   eval "$(poetryenv init - bash)"
+#
+# For zsh (~/.zshrc):
+#   eval "$(poetryenv init - zsh)"
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+shell="${2:-}"
+if [[ "$1" != "-" ]]; then
+    echo "Usage: eval \"\$(poetryenv init - [bash|zsh])\"" >&2
+    exit 1
+fi
+
+if [[ -z "$shell" ]]; then
+    shell="$(basename "${SHELL:-bash}")"
+fi
+
+case "$shell" in
+bash)
+    cat <<'EOF'
+# poetryenv shell integration for bash
+
+# Ensure poetryenv bin directory is in PATH
+poetryenv_bin="${POETRYENV_INSTALL_PREFIX:-$HOME/.local}/bin"
+if [[ ":$PATH:" != *":$poetryenv_bin:"* ]]; then
+    export PATH="$poetryenv_bin:$PATH"
+fi
+
+# Load bash completion
+poetryenv_completions="${POETRYENV_INSTALL_PREFIX:-$HOME/.local}/share/poetryenv/completions/poetryenv.bash"
+if [[ -f "$poetryenv_completions" ]]; then
+    source "$poetryenv_completions"
+fi
+EOF
+    ;;
+zsh)
+    cat <<'EOF'
+# poetryenv shell integration for zsh
+
+# Ensure poetryenv bin directory is in PATH
+poetryenv_bin="${POETRYENV_INSTALL_PREFIX:-$HOME/.local}/bin"
+if [[ ":$PATH:" != *":$poetryenv_bin:"* ]]; then
+    export PATH="$poetryenv_bin:$PATH"
+fi
+
+# Setup zsh completion
+poetryenv_completions_dir="${POETRYENV_INSTALL_PREFIX:-$HOME/.local}/share/poetryenv/completions"
+if [[ -f "$poetryenv_completions_dir/poetryenv.zsh" ]]; then
+    # Create _poetryenv symlink if it doesn't exist (zsh naming convention)
+    if [[ ! -f "$poetryenv_completions_dir/_poetryenv" ]]; then
+        ln -sf "$poetryenv_completions_dir/poetryenv.zsh" "$poetryenv_completions_dir/_poetryenv"
+    fi
+
+    # Add to fpath
+    fpath=("$poetryenv_completions_dir" $fpath)
+
+    # Initialize completion system if not already done
+    if ! type compdef >/dev/null 2>&1; then
+        autoload -Uz compinit
+        compinit
+    fi
+fi
+EOF
+    ;;
+*)
+    echo "poetryenv: unsupported shell: $shell" >&2
+    echo "Supported shells: bash, zsh" >&2
+    exit 1
+    ;;
+esac

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Usage: poetryenv global [<version>]
+# Summary: Set or show the global Poetry version
+# Help: With no arguments, shows the current global version.
+# With a version argument, sets that version as the global default.
+#
+# Examples:
+#   poetryenv global         Show current global version
+#   poetryenv global 1.8.5   Set 1.8.5 as global default
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+version="${1:-}"
+
+if [[ -z "$version" ]]; then
+    if [[ -f "$POETRYENV_GLOBAL_FILE" ]]; then
+        cat "$POETRYENV_GLOBAL_FILE"
+    else
+        warn "No global version set"
+        exit 1
+    fi
+    exit 0
+fi
+
+if [[ ! -d "$POETRYENV_VERSIONS_DIR/${version}" ]]; then
+    echo -e "${RED}Error: Poetry ${version} is not installed.${NC}" >&2
+    echo -e "${RED}Install with: ${GREEN}poetryenv install ${version}${NC}" >&2
+    exit 1
+fi
+
+echo "$version" >"$POETRYENV_GLOBAL_FILE"
+success "Global Poetry version set to ${version}"

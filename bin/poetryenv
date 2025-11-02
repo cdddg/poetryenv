@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# poetryenv - Simple, pyenv-style version manager for Poetry
+# Usage: poetryenv <command> [args]
+
+set -e
+
+resolve_link() {
+    $(type -p greadlink readlink | head -1) "$1"
+}
+
+abs_dirname() {
+    local cwd="$(pwd)"
+    local path="$1"
+
+    while [ -n "$path" ]; do
+        cd "${path%/*}"
+        local name="${path##*/}"
+        path="$(resolve_link "$name" || true)"
+    done
+
+    pwd
+    cd "$cwd"
+}
+
+export POETRYENV_ROOT="${POETRYENV_ROOT:-$HOME/.poetryenv}"
+
+if [ -z "${POETRYENV_DIR}" ]; then
+    POETRYENV_DIR="$(abs_dirname "$0")/.."
+fi
+
+export POETRYENV_DIR
+export PATH="${POETRYENV_DIR}/libexec:$PATH"
+
+command="$1"
+if [ -z "$command" ]; then
+    command="help"
+fi
+
+if [ "$command" = "--version" ] || [ "$command" = "-v" ]; then
+    # Source the lib to get POETRYENV_VERSION
+    source "${POETRYENV_DIR}/libexec/poetryenv--lib"
+    echo "poetryenv ${POETRYENV_VERSION}"
+    exit 0
+fi
+
+if [ "$command" = "--help" ] || [ "$command" = "-h" ]; then
+    command="help"
+fi
+
+command_path="$(command -v "poetryenv-$command" || true)"
+
+if [ -z "$command_path" ]; then
+    echo "poetryenv: Unknown command: $command" >&2
+    echo "Run 'poetryenv help' for usage." >&2
+    exit 1
+fi
+
+shift 1 || true
+
+"$command_path" "$@"

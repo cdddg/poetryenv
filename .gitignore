@@ -1,0 +1,61 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Emacs
+\#*\#
+.\#*
+
+# Logs
+*.log
+logs/
+
+# Testing
+test/tmp/
+test/fixtures/tmp/
+*.test.log
+
+# Project specific
+.docker-volumes/
+.claude/
+
+# Poetry version data (for testing)
+.poetryenv/
+versions/
+
+# Backup files
+*.backup
+*.old
+
+# Compiled files
+*.pyc
+*.pyo
+__pycache__/

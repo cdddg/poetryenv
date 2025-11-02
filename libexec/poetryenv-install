@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Usage: poetryenv install <version> [<version>...]
+#        poetryenv install --list
+# Summary: Install Poetry versions or list available versions
+# Help: Install poetry using the official installer from python-Poetry.org
+#
+# Examples:
+#   poetryenv install --list         List all available versions from PyPI
+#   poetryenv install 1.8.5          Install poetry 1.8.5
+#   poetryenv install 1.8.5 2.0.1    Install multiple versions
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+list_versions() {
+    info "Fetching available Poetry versions from PyPI..."
+    echo
+
+    if command -v curl &>/dev/null; then
+        local releases=$(curl -s https://pypi.org/pypi/poetry/json | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tr -d '"' | awk -F. '$1 >= 1' | sort -V | uniq)
+
+        if [[ -n "$releases" ]]; then
+            echo "Available Poetry versions (1.0+):"
+            echo
+
+            local current_major=""
+            echo "$releases" | while IFS= read -r version; do
+                local major_minor=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+
+                if [[ "$major_minor" != "$current_major" ]]; then
+                    [[ -n "$current_major" ]] && echo
+                    current_major="$major_minor"
+                fi
+
+                echo -e "  ${GREEN}${version}${NC}"
+            done
+        else
+            warn "Failed to fetch versions from PyPI"
+        fi
+    else
+        warn "curl not found. Cannot fetch remote versions."
+    fi
+
+    echo
+    echo -e "${BLUE}→ Visit https://pypi.org/project/poetry/#history for full list${NC}"
+}
+
+install_version() {
+    local version="$1"
+
+    [[ -z "$version" ]] && error "Version required. Usage: poetryenv install <version>"
+
+    local install_dir="$POETRYENV_VERSIONS_DIR/${version}"
+
+    if [[ -d "$install_dir" ]]; then
+        warn "Poetry ${version} is already installed"
+        return 0
+    fi
+
+    info "Installing Poetry ${version} using official installer..."
+
+    command -v curl &>/dev/null || error "curl not found. Please install curl first."
+    command -v python3 &>/dev/null || error "python3 not found. Please install Python first."
+
+    local python_cmd="python3"
+    if command -v pyenv &>/dev/null; then
+        python_cmd="$(pyenv which python3 2>/dev/null || echo python3)"
+    fi
+
+    info "Using Python: $($python_cmd --version 2>&1 | head -n1)"
+    info "Downloading Poetry installer from https://install.python-poetry.org..."
+
+    export POETRY_HOME="$install_dir"
+    export POETRY_VERSION="$version"
+
+    if ! curl -sSL https://install.python-poetry.org | "$python_cmd" -; then
+        rm -rf "$install_dir"
+        error "Failed to install Poetry ${version}"
+    fi
+
+    success "Poetry ${version} installed to ${install_dir}"
+
+    info "Configuring Poetry..."
+
+    local poetry_cmd="$install_dir/bin/poetry"
+    setup_poetry_env "$version"
+
+    "$poetry_cmd" config virtualenvs.prefer-active-python true 2>/dev/null &&
+        success "Set virtualenvs.prefer-active-python = true"
+
+    "$poetry_cmd" config virtualenvs.use-poetry-python false 2>/dev/null &&
+        success "Set virtualenvs.use-poetry-python = false"
+
+    "$poetry_cmd" config virtualenvs.in-project false 2>/dev/null &&
+        success "Set virtualenvs.in-project = false"
+
+    if [[ ! -f "$POETRYENV_GLOBAL_FILE" ]]; then
+        echo "${version}" >"$POETRYENV_GLOBAL_FILE"
+        success "Set ${version} as global default"
+    fi
+}
+
+versions=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --list | -l)
+        list_versions
+        exit 0
+        ;;
+    *)
+        versions+=("$1")
+        shift
+        ;;
+    esac
+done
+
+if [[ ${#versions[@]} -eq 0 ]]; then
+    error "Version required. Usage: poetryenv install <version> [<version>...]"
+fi
+
+for version in "${versions[@]}"; do
+    install_version "$version"
+done

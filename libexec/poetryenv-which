@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Usage: poetryenv which
+# Summary: Show the path to the active Poetry executable
+# Help: Displays the full path to the currently active Poetry executable.
+# Local version (.poetry-version) takes precedence over global version.
+#
+# Examples:
+#   poetryenv which    Show path to active poetry binary
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+version=""
+
+if [[ -f ".poetry-version" ]]; then
+    version=$(cat .poetry-version | tr -d '[:space:]')
+    poetry_bin="$POETRYENV_VERSIONS_DIR/${version}/bin/poetry"
+    if [[ -x "$poetry_bin" ]]; then
+        echo "$poetry_bin"
+        exit 0
+    fi
+fi
+
+if [[ -f "$POETRYENV_GLOBAL_FILE" ]]; then
+    version=$(cat "$POETRYENV_GLOBAL_FILE")
+    poetry_bin="$POETRYENV_VERSIONS_DIR/${version}/bin/poetry"
+    if [[ -x "$poetry_bin" ]]; then
+        echo "$poetry_bin"
+        exit 0
+    fi
+fi
+
+error "No poetry executable found. Run 'poetryenv install <version>' first."

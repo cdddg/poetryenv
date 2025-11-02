@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Usage: poetryenv versions [--bare]
+# Summary: List all installed Poetry versions
+# Help: Lists all Poetry versions installed in the versions directory.
+#
+# Options:
+#   --bare    Print only the version numbers, one per line
+#
+# The currently active version is marked with an asterisk (*).
+#
+# Examples:
+#   poetryenv versions          # List all installed versions with formatting
+#   poetryenv versions --bare   # List only version numbers for scripting
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+if [[ "$1" == "--bare" ]] || [[ "$1" == "-b" ]]; then
+    if [[ -d "$POETRYENV_VERSIONS_DIR" ]]; then
+        for version_dir in "$POETRYENV_VERSIONS_DIR"/*; do
+            if [[ -d "$version_dir" ]]; then
+                basename "$version_dir"
+            fi
+        done
+    fi
+    exit 0
+fi
+
+global_version=""
+[[ -f "$POETRYENV_GLOBAL_FILE" ]] && global_version=$(cat "$POETRYENV_GLOBAL_FILE")
+
+local_version=""
+[[ -f ".poetry-version" ]] && local_version=$(cat .poetry-version | tr -d '[:space:]')
+
+found=0
+has_active=0
+active_version=""
+active_source=""
+if [[ -n "$local_version" ]]; then
+    active_version="$local_version"
+    active_source=" (set by $(pwd)/.poetry-version)"
+elif [[ -n "$global_version" ]]; then
+    active_version="$global_version"
+    active_source=" (set by $POETRYENV_GLOBAL_FILE)"
+fi
+
+if [[ -d "$POETRYENV_VERSIONS_DIR" ]]; then
+    for version_dir in "$POETRYENV_VERSIONS_DIR"/*; do
+        if [[ -d "$version_dir" ]]; then
+            version=$(basename "$version_dir")
+            prefix="  "
+            suffix=""
+
+            if [[ "$version" == "$active_version" ]]; then
+                prefix="* "
+                suffix="$active_source"
+                has_active=1
+            fi
+
+            if [[ "$prefix" == "* " ]]; then
+                printf "${GREEN}${prefix}${version}${suffix}${NC}\n"
+            else
+                printf "${prefix}${version}\n"
+            fi
+            found=1
+        fi
+    done
+fi
+
+if [[ $found -eq 0 ]]; then
+    warn "No poetry versions installed"
+    echo
+    echo -e "Install with: ${GREEN}poetryenv install <version>${NC}"
+elif [[ $has_active -eq 0 ]]; then
+    echo
+    warn "No poetry version is set"
+    echo
+    echo "Set a version with:"
+    echo -e "  ${GREEN}poetryenv global <version>${NC}   # Set global default"
+    echo -e "  ${GREEN}poetryenv local <version>${NC}    # Set for current project"
+fi

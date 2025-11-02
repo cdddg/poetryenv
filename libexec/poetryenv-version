@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Usage: poetryenv version
+# Summary: Show the currently active Poetry version
+# Help: Shows the currently active Poetry version and where it's configured from.
+# Local version (.poetry-version) takes precedence over global version.
+#
+# Examples:
+#   poetryenv version    Show active version
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+version=""
+
+if [[ -f ".poetry-version" ]]; then
+    version=$(cat .poetry-version | tr -d '[:space:]')
+    echo "${version} (from .poetry-version)"
+    exit 0
+fi
+
+if [[ -f "$POETRYENV_GLOBAL_FILE" ]]; then
+    version=$(cat "$POETRYENV_GLOBAL_FILE")
+    echo "${version} (global)"
+    exit 0
+fi
+
+error "No poetry version configured. Run 'poetryenv install <version>' first."

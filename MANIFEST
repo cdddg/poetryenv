@@ -1,0 +1,14 @@
+bin/poetry-shim
+bin/poetryenv
+completions/poetryenv.bash
+completions/poetryenv.zsh
+libexec/poetryenv--lib
+libexec/poetryenv-global
+libexec/poetryenv-help
+libexec/poetryenv-init
+libexec/poetryenv-install
+libexec/poetryenv-local
+libexec/poetryenv-uninstall
+libexec/poetryenv-version
+libexec/poetryenv-versions
+libexec/poetryenv-which

@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+export POETRYENV_VERSION="0.1.0"
+export POETRYENV_ROOT="${POETRYENV_ROOT:-$HOME/.poetryenv}"
+export POETRYENV_GLOBAL_FILE="$POETRYENV_ROOT/global"
+export POETRYENV_VERSIONS_DIR="$POETRYENV_ROOT/versions"
+if [[ -z "${NO_COLOR}" ]] && [[ -t 1 ]]; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    NC=''
+fi
+
+mkdir -p "$POETRYENV_ROOT" "$POETRYENV_VERSIONS_DIR"
+error() {
+    echo -e "${RED}Error: $1${NC}" >&2
+    exit 1
+}
+
+success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+info() {
+    echo -e "${BLUE}→ $1${NC}"
+}
+
+warn() {
+    echo -e "${YELLOW}Warning: $1${NC}"
+}
+
+normalize_version() {
+    local version="$1"
+    echo "$version" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/'
+}
+
+setup_poetry_env() {
+    local version="$1"
+    local version_root="$POETRYENV_VERSIONS_DIR/${version}"
+
+    export POETRY_CONFIG_DIR="$version_root/config"
+    export POETRY_DATA_DIR="$version_root/data"
+    export POETRY_CACHE_DIR="$version_root/cache"
+}

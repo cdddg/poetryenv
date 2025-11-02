@@ -1,0 +1,32 @@
+#!/bin/bash
+# Poetry shim - automatically uses the correct poetry version
+
+SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+POETRYENV_LIBEXEC_DIR="$(dirname "$SHIM_DIR")/libexec"
+
+source "$POETRYENV_LIBEXEC_DIR/poetryenv--lib"
+
+if [[ -f ".poetry-version" ]]; then
+    read -r version <.poetry-version
+    version="${version// /}"
+elif [[ -f "$POETRYENV_ROOT/global" ]]; then
+    read -r version <"$POETRYENV_ROOT/global"
+else
+    printf '\033[0;31mError: No poetry version configured\033[0m\n' >&2
+    printf '\nSet up poetry with:\n' >&2
+    printf '  \033[0;32mpoetryenv install 1.8.5\033[0m\n' >&2
+    printf '  \033[0;32mpoetryenv global 1.8.5\033[0m\n' >&2
+    printf '\nOr for current project:\n' >&2
+    printf '  \033[0;32mpoetryenv local 1.7.1\033[0m\n\n' >&2
+    exit 1
+fi
+
+poetry_bin="$POETRYENV_VERSIONS_DIR/${version}/bin/poetry"
+if [[ -x "$poetry_bin" ]]; then
+    setup_poetry_env "$version"
+    exec "$poetry_bin" "$@"
+fi
+
+printf '\033[0;31mError: Poetry version %s not installed\033[0m\n' "$version" >&2
+printf '\033[0;31mInstall with: \033[0;32mpoetryenv install %s\033[0m\n' "$version" >&2
+exit 1

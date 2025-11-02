@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Usage: poetryenv local [<version>]
+#        poetryenv local --unset
+# Summary: Set or show the local Poetry version
+# Help: With no arguments, shows the current local version (.Poetry-version file).
+# With a version argument, sets that version for the current directory.
+# With --unset, removes the .poetry-version file.
+#
+# Examples:
+#   poetryenv local           Show current local version
+#   poetryenv local 1.7.1     Set 1.7.1 for current project
+#   poetryenv local --unset   Remove .poetry-version file
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+version="${1:-}"
+
+if [[ "$version" == "--unset" ]]; then
+    if [[ -f ".poetry-version" ]]; then
+        rm .poetry-version
+        success "Removed .poetry-version"
+    else
+        warn "No .poetry-version file in current directory"
+    fi
+    exit 0
+fi
+
+if [[ -z "$version" ]]; then
+    if [[ -f ".poetry-version" ]]; then
+        cat .poetry-version
+    else
+        warn "No .poetry-version file in current directory"
+        exit 1
+    fi
+    exit 0
+fi
+
+if [[ ! -d "$POETRYENV_VERSIONS_DIR/${version}" ]]; then
+    echo -e "${RED}Error: Poetry ${version} is not installed.${NC}" >&2
+    echo -e "${RED}Install with: ${GREEN}poetryenv install ${version}${NC}" >&2
+    exit 1
+fi
+
+echo "$version" >.poetry-version
+success "Set local Poetry version to ${version} (saved in .poetry-version)"

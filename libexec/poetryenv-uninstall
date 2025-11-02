@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Usage: poetryenv uninstall <version> [-f|--force]
+# Summary: Uninstall a specific Poetry version
+# Help: Removes a Poetry version from the versions directory.
+# Use -f or --force to skip confirmation prompts.
+#
+# Examples:
+#   poetryenv uninstall 1.7.1
+#   poetryenv uninstall 1.7.1 --force
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+versions=()
+force=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -f | --force | -y)
+        force=1
+        shift
+        ;;
+    *)
+        versions+=("$1")
+        shift
+        ;;
+    esac
+done
+
+if [[ ${#versions[@]} -eq 0 ]]; then
+    error "Version required. Usage: poetryenv uninstall <version> [<version>...]"
+fi
+
+for version in "${versions[@]}"; do
+    install_dir="$POETRYENV_VERSIONS_DIR/${version}"
+
+    [[ ! -d "$install_dir" ]] && error "Poetry ${version} is not installed"
+
+    if [[ -f "$POETRYENV_GLOBAL_FILE" ]] && [[ $force -eq 0 ]] && [[ -t 0 ]]; then
+        global_version=$(cat "$POETRYENV_GLOBAL_FILE")
+        if [[ "$global_version" == "$version" ]]; then
+            warn "This is the global version. You may want to set another version as global first."
+            read -p "Continue anyway? (y/N) " -n 1 -r
+            echo
+            [[ ! $REPLY =~ ^[Yy]$ ]] && continue
+        fi
+    fi
+
+    info "Uninstalling Poetry ${version}..."
+
+    if rm -rf "$install_dir"; then
+        success "Poetry ${version} uninstalled"
+    else
+        error "Failed to uninstall Poetry ${version}"
+    fi
+done

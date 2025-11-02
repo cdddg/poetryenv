@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Usage: poetryenv help
+# Summary: Show help information
+# Help: Displays usage information for Poetryenv and all available commands.
+
+set -e
+
+source "$(dirname "$0")/poetryenv--lib"
+
+cat <<EOF
+$(printf "${BLUE}poetryenv${NC}") - Simple, pyenv-style version manager for Poetry
+
+$(printf "${YELLOW}Usage:${NC}") poetryenv <command> [args]
+
+$(printf "${YELLOW}Commands:${NC}")
+  $(printf "${GREEN}install${NC}") <version>      Install a specific Poetry version
+  $(printf "${GREEN}install${NC}") --list         List all available versions from PyPI
+  $(printf "${GREEN}uninstall${NC}") <version>    Uninstall a specific Poetry version
+  $(printf "${GREEN}global${NC}") [<version>]     Set or show the global Poetry version
+  $(printf "${GREEN}local${NC}") [<version>]      Set or show the local Poetry version
+  $(printf "${GREEN}local${NC}") --unset          Remove local version setting
+  $(printf "${GREEN}version${NC}")                Show the currently active Poetry version
+  $(printf "${GREEN}versions${NC}")               List all installed Poetry versions
+  $(printf "${GREEN}which${NC}")                  Show the path to the active Poetry executable
+  $(printf "${GREEN}init${NC}")                   Configure shell environment for poetryenv
+
+$(printf "${YELLOW}Examples:${NC}")
+  poetryenv install --list       # List available versions
+  poetryenv install 1.8.5        # Install Poetry 1.8.5
+  poetryenv versions             # List installed versions
+  poetryenv global 1.8.5         # Set global default to 1.8.5
+  poetryenv local 1.7.1          # Use 1.7.1 for current project
+  poetryenv local                # Show current project version
+  poetryenv version              # Show active version (respects local)
+  poetryenv local --unset        # Remove .poetry-version file
+
+$(printf "${YELLOW}Environment:${NC}")
+  POETRYENV_ROOT         Config directory (default: ~/.poetryenv)
+
+EOF
