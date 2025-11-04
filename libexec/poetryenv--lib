@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export POETRYENV_VERSION="0.1.0"
+export POETRYENV_VERSION="0.1.1"
 export POETRYENV_ROOT="${POETRYENV_ROOT:-$HOME/.poetryenv}"
 export POETRYENV_GLOBAL_FILE="$POETRYENV_ROOT/global"
 export POETRYENV_VERSIONS_DIR="$POETRYENV_ROOT/versions"

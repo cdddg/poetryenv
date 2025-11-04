@@ -22,7 +22,7 @@ teardown() {
     mock_install_poetry 1.8.5
     run poetryenv global 1.8.5
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Global poetry version set to 1.8.5" ]]
+    [[ "$output" =~ "Global Poetry version set to 1.8.5" ]]
 }
 
 @test "poetryenv global <version> creates global file" {

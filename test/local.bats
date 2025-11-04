@@ -22,7 +22,7 @@ teardown() {
     mock_install_poetry 1.7.1
     run poetryenv local 1.7.1
     [ "$status" -eq 0 ]
-    [[ "$output" =~ "Set local poetry version to 1.7.1" ]]
+    [[ "$output" =~ "Set local Poetry version to 1.7.1" ]]
 }
 
 @test "poetryenv local <version> creates .poetry-version file" {
