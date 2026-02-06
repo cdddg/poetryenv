@@ -58,9 +58,9 @@ else
     # Remote installation
     printf "${BLUE}→ Downloading poetryenv from GitHub${NC}\n"
 
-    local base_url="https://raw.githubusercontent.com/cdddg/poetryenv/main"
-    local manifest_url="${base_url}/MANIFEST"
-    local tmp_manifest="/tmp/poetryenv.manifest.$$"
+    base_url="https://raw.githubusercontent.com/cdddg/poetryenv/main"
+    manifest_url="${base_url}/MANIFEST"
+    tmp_manifest="/tmp/poetryenv.manifest.$$"
 
     printf "Downloading manifest from %s\n" "$manifest_url"
     if ! curl -fsSL "$manifest_url" -o "$tmp_manifest"; then
@@ -72,7 +72,7 @@ else
         # Skip empty lines
         [[ -z "$filepath" ]] && continue
 
-        local dest_dir=""
+        dest_dir=""
         case "$filepath" in
             bin/*) dest_dir="$INSTALL_BIN" ;;
             libexec/*) dest_dir="$INSTALL_LIBEXEC" ;;
@@ -83,9 +83,9 @@ else
                 ;;
         esac
 
-        local filename=$(basename "$filepath")
-        local dest_path="$dest_dir/$filename"
-        local file_url="$base_url/$filepath"
+        filename=$(basename "$filepath")
+        dest_path="$dest_dir/$filename"
+        file_url="$base_url/$filepath"
 
         printf "Downloading %s to %s\n" "$filepath" "$dest_path"
         if ! curl -fsSL "$file_url" -o "$dest_path"; then
