@@ -141,7 +141,7 @@ fi
 if [[ -f "bin/poetry-shim" ]]; then
     cp bin/poetry-shim "$INSTALL_BIN/poetry"
 else
-    curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/poetryenv/main/bin/poetry-shim -o "$INSTALL_BIN/poetry"
+    curl -fsSL https://raw.githubusercontent.com/cdddg/poetryenv/main/bin/poetry-shim -o "$INSTALL_BIN/poetry"
 fi
 chmod +x "$INSTALL_BIN/poetry"
 
