@@ -45,6 +45,10 @@ EOF
 zsh)
     cat <<'EOF'
 # poetryenv shell integration for zsh
+#
+# NOTE: tab completion requires compinit. If your shell config doesn't
+# already call it, add this BEFORE `eval "$(poetryenv init - zsh)"`:
+#     autoload -Uz compinit && compinit
 
 # Ensure poetryenv bin directory is in PATH
 poetryenv_bin="${POETRYENV_INSTALL_PREFIX:-$HOME/.local}/bin"
@@ -60,14 +64,8 @@ if [[ -f "$poetryenv_completions_dir/poetryenv.zsh" ]]; then
         ln -sf "$poetryenv_completions_dir/poetryenv.zsh" "$poetryenv_completions_dir/_poetryenv"
     fi
 
-    # Add to fpath
+    # Add to fpath (compinit — called elsewhere by the user — will autoload _poetryenv)
     fpath=("$poetryenv_completions_dir" $fpath)
-
-    # Initialize completion system if not already done
-    if ! type compdef >/dev/null 2>&1; then
-        autoload -Uz compinit
-        compinit
-    fi
 fi
 EOF
     ;;

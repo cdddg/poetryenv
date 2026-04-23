@@ -28,11 +28,18 @@ PREFIX=$HOME/.local ./install.sh
 
 ### Setup Shell Integration
 
-Add the following to your `~/.zshrc` or `~/.bashrc`:
+**zsh** — add to your `~/.zshrc`:
 
 ```bash
-eval "$(poetryenv init - zsh)"    # for zsh
-eval "$(poetryenv init - bash)"   # for bash
+eval "$(poetryenv init - zsh)"
+```
+
+> Tab completion requires `compinit` to have been loaded before the `eval` line above. Most shell frameworks (oh-my-zsh, prezto, zinit, etc.) handle this for you. If yours doesn't, add `autoload -Uz compinit && compinit` before the `eval`.
+
+**bash** — add to your `~/.bashrc`:
+
+```bash
+eval "$(poetryenv init - bash)"
 ```
 
 Then reload your shell:
