@@ -18,10 +18,10 @@ list_versions() {
     echo
 
     if command -v curl &>/dev/null; then
-        local releases=$(curl -s https://pypi.org/pypi/poetry/json | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tr -d '"' | awk -F. '$1 >= 1' | sort -V | uniq)
+        local releases=$(curl -s https://pypi.org/pypi/poetry/json | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tr -d '"' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 2)' | sort -V | uniq)
 
         if [[ -n "$releases" ]]; then
-            echo "Available Poetry versions (1.0+):"
+            echo "Available Poetry versions (${POETRYENV_MIN_SUPPORTED_VERSION}+):"
             echo
 
             local current_major=""
@@ -50,6 +50,10 @@ install_version() {
     local version="$1"
 
     [[ -z "$version" ]] && error "Version required. Usage: poetryenv install <version>"
+
+    if ! version_supports_isolation "$version"; then
+        error "Poetry ${version} is not supported. poetryenv requires Poetry >= ${POETRYENV_MIN_SUPPORTED_VERSION} because POETRY_CONFIG_DIR / POETRY_DATA_DIR / POETRY_CACHE_DIR (used for per-version isolation) were introduced in 1.2."
+    fi
 
     local install_dir="$POETRYENV_VERSIONS_DIR/${version}"
 

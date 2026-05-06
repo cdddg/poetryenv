@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
-# Integration tests - complete workflows
+# Workflow tests — multi-step poetryenv flows in a mock environment.
+#
+# These exercise install → global → local → use compositions without touching
+# the real PyPI installer. Despite the historical name "integration", these
+# are unit-level tests; real-install integration lives in real_isolation.bats.
 
 load helpers/test_helper
 

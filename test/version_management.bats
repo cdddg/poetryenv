@@ -38,6 +38,74 @@ teardown() {
     [[ "$output" =~ "Available Poetry versions" ]]
 }
 
+@test "poetryenv install --list excludes versions before 1.2" {
+    run poetryenv install --list
+    [ "$status" -eq 0 ]
+    # 1.0.x and 1.1.x lack POETRY_CONFIG_DIR/DATA_DIR/CACHE_DIR support
+    # so they must not be advertised as available.
+    ! [[ "$output" =~ $'\n  1.0.' ]]
+    ! [[ "$output" =~ $'\n  1.1.' ]]
+    # Header should announce the lower bound.
+    [[ "$output" =~ "1.2.0+" ]]
+}
+
+@test "poetryenv install rejects 1.0.x" {
+    run poetryenv install 1.0.10
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "not supported" ]]
+    [[ "$output" =~ "1.2.0" ]]
+    # No directory should have been created.
+    [ ! -d "${POETRYENV_ROOT}/versions/1.0.10" ]
+}
+
+@test "poetryenv install rejects 1.1.x" {
+    run poetryenv install 1.1.15
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "not supported" ]]
+    [ ! -d "${POETRYENV_ROOT}/versions/1.1.15" ]
+}
+
+@test "poetryenv install rejects unsupported version before touching network" {
+    # If the version check ran AFTER curl/python checks, we might hit
+    # a different error first. Verify the 'not supported' message comes
+    # out specifically for an unsupported version.
+    run poetryenv install 1.1.0
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "not supported" ]]
+    # Should NOT have attempted to invoke the official installer.
+    ! [[ "$output" =~ "Downloading Poetry installer" ]]
+}
+
+@test "poetryenv install with multiple versions stops at unsupported" {
+    # First arg is unsupported; install must fail before processing the rest.
+    run poetryenv install 1.0.0 1.8.5
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "not supported" ]]
+    [ ! -d "${POETRYENV_ROOT}/versions/1.0.0" ]
+    [ ! -d "${POETRYENV_ROOT}/versions/1.8.5" ]
+}
+
+@test "version_supports_isolation accepts 1.2.0 and above" {
+    source libexec/poetryenv--lib
+
+    version_supports_isolation 1.2.0
+    version_supports_isolation 1.2.3
+    version_supports_isolation 1.8.5
+    version_supports_isolation 2.0.0
+    version_supports_isolation 2.4.0
+    version_supports_isolation 2.0.0b1
+}
+
+@test "version_supports_isolation rejects 1.1 and below" {
+    source libexec/poetryenv--lib
+
+    ! version_supports_isolation 1.0.0
+    ! version_supports_isolation 1.0.10
+    ! version_supports_isolation 1.1.0
+    ! version_supports_isolation 1.1.15
+    ! version_supports_isolation 0.12.17
+}
+
 @test "poetryenv install <version> installs poetry" {
     mock_install_poetry 1.8.5
     [ -d "${POETRYENV_ROOT}/versions/1.8.5" ]

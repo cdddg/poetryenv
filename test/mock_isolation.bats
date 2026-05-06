@@ -1,5 +1,9 @@
 #!/usr/bin/env bats
-# Environment variable isolation tests
+# Isolation logic tests (mock-based).
+#
+# Verifies setup_poetry_env() and the per-version directory layout in a mock
+# environment. For verifying that a real Poetry binary actually honors
+# POETRY_CONFIG_DIR / POETRY_CACHE_DIR, see real_isolation.bats.
 
 load helpers/test_helper
 
