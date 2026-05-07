@@ -1,0 +1,63 @@
+name: tests
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: install bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: unit tests
+        run: bash test/run.sh --unit
+
+      # Latest patch of every Poetry minor >= 1.2, auto-discovered from PyPI.
+      # New release → list changes → cache key changes → cache invalidates.
+      - name: compute representative poetry versions
+        id: versions
+        run: |
+          list=$(curl -fsSL https://pypi.org/pypi/poetry/json \
+            | grep -o '"[0-9]*\.[0-9]*\.[0-9]*"' | tr -d '"' \
+            | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 2)' \
+            | sort -V -u \
+            | awk -F. '{ v[$1"."$2] = $0 } END { for (k in v) print v[k] }' \
+            | sort -V)
+
+          echo "selected versions:"
+          echo "$list" | sed 's/^/  /'
+
+          {
+            echo "list<<EOF"
+            echo "$list"
+            echo "EOF"
+            echo "hash=$(echo "$list" | sha256sum | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: cache installed poetry versions
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ runner.temp }}/poetryenv-real/.poetryenv/versions
+          key: poetry-versions-${{ runner.os }}-py3.11-${{ hashFiles('libexec/poetryenv-install', 'libexec/poetryenv--lib') }}-${{ steps.versions.outputs.hash }}
+
+      - name: install poetry versions
+        env:
+          POETRYENV_ROOT: ${{ runner.temp }}/poetryenv-real/.poetryenv
+        run: |
+          echo "cache-hit: ${{ steps.cache.outputs.cache-hit }}"
+          xargs ./bin/poetryenv install <<< '${{ steps.versions.outputs.list }}'
+
+      - name: integration tests
+        env:
+          POETRYENV_ROOT: ${{ runner.temp }}/poetryenv-real/.poetryenv
+        run: bash test/run.sh --integration -f

@@ -11,98 +11,89 @@ NC='\033[0m'
 
 show_help() {
     cat <<EOF
-Usage: ./test.sh [options] [test-file]
+Usage: ./test.sh [mode] [verbosity] [test-file]
 
-Options:
+Modes (mutually exclusive — last one wins):
+    --unit              Run unit tests (default)
+    --integration       Run integration tests
+    --all               Run both
+
+Verbosity:
+    -v, --verbose       Show all test output
+    -f, --failed        Print output only when a test fails
+    -t, --trace         Detailed trace
+
+Other:
     -h, --help          Show this help
-    -v, --verbose       Verbose output (show all test output)
-    -f, --failed        Only show failed tests details
-    -t, --trace         Show detailed trace (like Python traceback)
 
 Examples:
-    ./test.sh                           # Run all tests
-    ./test.sh test/basic.bats           # Run specific test file
-    ./test.sh -v                        # Run all tests with verbose output
-    ./test.sh -f test/global_local.bats # Run with failure details
-    ./test.sh -t                        # Run with detailed trace
-
-Test files:
-    test/basic.bats              - Basic functionality tests
-    test/version_management.bats - Install/uninstall tests
-    test/global.bats             - Global version tests
-    test/local.bats              - Local version tests
-    test/shim.bats               - Poetry shim tests
-    test/version_isolation.bats  - Version isolation tests
-    test/integration.bats        - Integration workflow tests
+    ./test.sh                           # Unit (default)
+    ./test.sh --integration             # Integration only
+    ./test.sh --all                     # Both
+    ./test.sh test/basic.bats           # A specific file
+    ./test.sh -v                        # Unit, verbose
 EOF
 }
 
-# Parse arguments
+UNIT_TESTS=(
+    "test/basic.bats"
+    "test/version_management.bats"
+    "test/global.bats"
+    "test/local.bats"
+    "test/mock_isolation.bats"
+    "test/shim.bats"
+    "test/workflow.bats"
+)
+
+INTEGRATION_TESTS=(
+    "test/real_isolation.bats"
+)
+
 VERBOSE=0
 FAILED_ONLY=0
 TRACE=0
-TEST_PATH="test/"
+MODE="unit"
+EXPLICIT_FILE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        -v|--verbose)
-            VERBOSE=1
-            shift
-            ;;
-        -f|--failed)
-            FAILED_ONLY=1
-            shift
-            ;;
-        -t|--trace)
-            TRACE=1
-            shift
-            ;;
-        *)
-            TEST_PATH="$1"
-            shift
-            ;;
+        -h|--help)        show_help; exit 0 ;;
+        --unit)           MODE="unit"; shift ;;
+        --integration)    MODE="integration"; shift ;;
+        --all)            MODE="all"; shift ;;
+        -v|--verbose)     VERBOSE=1; shift ;;
+        -f|--failed)      FAILED_ONLY=1; shift ;;
+        -t|--trace)       TRACE=1; shift ;;
+        *)                EXPLICIT_FILE="$1"; shift ;;
     esac
 done
 
-# Build bats command
-BATS_CMD="bats"
-
-# Define the desired order of test execution
-# If a specific test file is passed as an argument, only that file will be run.
-if [[ "$TEST_PATH" != "test/" ]]; then
-    TEST_TARGETS=("$TEST_PATH")
+if [[ -n "$EXPLICIT_FILE" ]]; then
+    TEST_TARGETS=("$EXPLICIT_FILE")
 else
-    TEST_TARGETS=(
-        "test/basic.bats"
-        "test/version_management.bats"
-        "test/global.bats"
-        "test/local.bats"
-        "test/version_isolation.bats"
-        "test/shim.bats"
-        "test/integration.bats"
-    )
+    case "$MODE" in
+        unit)        TEST_TARGETS=("${UNIT_TESTS[@]}") ;;
+        integration) TEST_TARGETS=("${INTEGRATION_TESTS[@]}") ;;
+        all)         TEST_TARGETS=("${UNIT_TESTS[@]}" "${INTEGRATION_TESTS[@]}") ;;
+    esac
 fi
 
+BATS_CMD="bats"
 if [[ $TRACE -eq 1 ]]; then
-    # Most detailed output - like Python traceback
     BATS_CMD="$BATS_CMD --print-output-on-failure --show-output-of-passing-tests --verbose-run --trace"
 elif [[ $VERBOSE -eq 1 ]]; then
-    # Verbose output - show ALL test outputs (passing and failing)
     BATS_CMD="$BATS_CMD --show-output-of-passing-tests --verbose-run"
 elif [[ $FAILED_ONLY -eq 1 ]]; then
-    # Only show failures - like Python traceback
     BATS_CMD="$BATS_CMD --print-output-on-failure"
 fi
 
-# Add formatter for better readability
-BATS_CMD="$BATS_CMD --formatter pretty"
+# `pretty` calls tput and breaks on non-TTY stdout (CI runners have no $TERM).
+# Fall back to the default TAP formatter when not attached to a terminal.
+if [[ -t 1 ]]; then
+    BATS_CMD="$BATS_CMD --formatter pretty"
+fi
 
-# Run tests
-printf "${GREEN}→ Running tests...${NC}\n"
+printf "${GREEN}→ Running tests (${MODE})...${NC}\n"
 printf "${YELLOW}Command: ${BATS_CMD} ${TEST_TARGETS[*]}${NC}\n\n"
 
 if $BATS_CMD "${TEST_TARGETS[@]}"; then
